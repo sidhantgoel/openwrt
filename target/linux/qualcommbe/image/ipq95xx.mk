@@ -24,3 +24,22 @@ define Device/qcom_rdp433
 	IMAGE/sysupgrade.bin := append-kernel | pad-to 64k | append-rootfs | pad-rootfs | check-size | append-metadata
 endef
 TARGET_DEVICES += qcom_rdp433
+
+define Device/tplink_be800v1
+	$(call Device/FitImage)
+	$(call Device/UbiFit)
+	DEVICE_VENDOR := TP-Link
+	DEVICE_MODEL := BE800
+	DEVICE_VARIANT := v1
+	DEVICE_DTS_CONFIG := config@al02-c4
+	BLOCKSIZE := 128k
+	PAGESIZE := 2048
+	IMAGE_SIZE := 51200k
+	UBINIZE_OPTS := -E 5
+	UBIFS_OPTS := -m 2048 -e 126976 -c 4096
+	KERNEL_INSTALL := 1
+	KERNEL_SIZE := 6144k
+	SOC := ipq9574
+	DEVICE_PACKAGES := kmod-ath12k ath12k-firmware-qcn9274 f2fsck mkf2fs kmod-sfp
+endef
+TARGET_DEVICES += tplink_be800v1
