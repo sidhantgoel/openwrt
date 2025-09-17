@@ -267,7 +267,7 @@
 };
 
 &usb_0_qmpphy {
-	vdda-pll-supply = <&mp5496_l5>;
+	/*vdda-pll-supply = <&mp5496_l5>;*/
 	vdda-phy-supply = <&regulator_fixed_0p925>;
 
 	status = "okay";
@@ -275,7 +275,7 @@
 
 &usb_0_qusbphy {
 	vdd-supply = <&regulator_fixed_0p925>;
-	vdda-pll-supply = <&mp5496_l5>;
+	/*vdda-pll-supply = <&mp5496_l5>;*/
 	vdda-phy-dpdm-supply = <&regulator_fixed_3p3>;
 
 	status = "okay";
