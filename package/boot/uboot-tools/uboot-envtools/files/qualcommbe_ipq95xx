@@ -14,6 +14,9 @@ case "$board" in
 tplink,archer-be550-v1)
 	ubootenv_add_mtd "0:appsblenv" "" "0x0" "0x40000" "0x40000"
 	;;
+tplink,archer-be800|tplink,archer-be800-sfp)
+	ubootenv_add_mtd "0:appsblenv" "0x0" "0x40000" "0x40000"
+	;;
 esac
 
 config_load ubootenv
