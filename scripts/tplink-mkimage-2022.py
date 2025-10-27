@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
-'''A program for manipulating tplink2022 images.
+'''A program for manipulating tplink2023 images.
 
-A tplink2022 is an image format encountered on TP-Link devices around the year
-2022. This was seen at least on the EAP610-Outdoor. The format is a container
+A tplink2023 is an image format encountered on TP-Link devices around the year
+2023. This was seen at least on the EAP610-Outdoor. The format is a container
 for a rootfs, and has optional fields for the "software" version. It also
  requires a "support" string that describes the list of compatible devices.
 
 This module is intended for creating such images with an OpenWRT UBI image, but
-also supports analysis and extraction of vendor images. Altough tplink2022
+also supports analysis and extraction of vendor images. Altough tplink2023
 images can be signed, this program does not support signing image.
 
 To get an explanation of the commandline arguments, run this program with the
@@ -24,53 +24,64 @@ import struct
 
 
 def decode_header(datafile):
-    '''Read the tplink2022 image header anbd decode it into a dictionary'''
+    '''Read the tplink2023 image header and decode it into a dictionary'''
     header = {}
-    fmt = '>2I'
 
     datafile.seek(0x1014)
-    raw_header = datafile.read(8)
-    fields = struct.unpack(fmt, raw_header)
 
-    header['rootfs_size'] = fields[0]
-    header['num_items'] = fields[1]
     header['items'] = []
 
-    rootfs = {}
-    rootfs['name'] = 'rootfs.ubi'
-    rootfs['offset'] = 0
-    rootfs['size'] = header['rootfs_size']
-    header['items'].append(rootfs)
-
-    for _ in range(header['num_items']):
+    while True:
         entry = datafile.read(0x2c)
-        fmt = '>I32s2I'
+        fmt = '>32s3I'
         fields = struct.unpack(fmt, entry)
 
         section = {}
-        section['name'] = fields[1].decode("utf-8").rstrip('\0')
-        section['type'] = fields[0]
-        section['offset'] = fields[2]
+        section['name'] = fields[0].decode("utf-8").rstrip('\0')
+        section['offset'] = 0x1014 + fields[1]
         section['size'] = fields[3]
         header['items'].append(section)
+
+        if fields[2] == 0:
+            # last section, rootfs follows
+            datafile.seek(section['offset'] + section['size'])
+            break
+
+        # move to next section
+        datafile.seek(0x1014 + fields[2])
+    
+    
+    currentOffset = datafile.tell()
+    datafile.seek(0, os.SEEK_END)
+    rootfsSize = datafile.tell() - currentOffset
+    rootfs = {}
+    rootfs['name'] = 'rootfs.ubi'
+    rootfs['offset'] = currentOffset
+    rootfs['size'] = rootfsSize
+    header['rootfs'] = rootfs
+
     return header
 
 def extract(datafile):
-    '''Extract the sections of the tplink2022 image to separate files'''
+    '''Extract the sections of the tplink2023 image to separate files'''
     header = decode_header(datafile)
 
     pretty = pprint.PrettyPrinter(indent=4, sort_dicts=False)
     pretty.pprint(header)
 
     for section in header['items']:
-        datafile.seek(0x1814 + section['offset'])
+        datafile.seek(section['offset'])
         section_contents = datafile.read(section['size'])
 
         with open(f"{section['name']}.bin", 'wb') as section_file:
             section_file.write(section_contents)
 
-    with open('leftover.bin', 'wb') as extras_file:
-        extras_file.write(datafile.read())
+    rootfs = header['rootfs']
+    datafile.seek(rootfs['offset'])
+    rootfs_contents = datafile.read(rootfs['size'])
+
+    with open(f"{rootfs['name']}.bin", 'wb') as section_file:
+        section_file.write(rootfs_contents)
 
 def get_section_contents(section):
     '''I don't remember what this does. It's been a year since I wrote this'''
@@ -88,7 +99,7 @@ def get_section_contents(section):
     return data
 
 def write_image(output_image, header):
-    '''Write a tplink2022 image with the contents in the "header" dictionary'''
+    '''Write a tplink2023 image with the contents in the "header" dictionary'''
     with open(output_image, 'w+b') as out_file:
         # header MD5
         salt = [ 0x7a, 0x2b, 0x15, 0xed,
@@ -103,27 +114,31 @@ def write_image(output_image, header):
         # unknown section
         out_file.write(bytes([0xff] * 0x1000))
 
-        # Table of contents
-        raw_header = struct.pack('>2I', header['rootfs_size'],
-                        header['num_items'])
-        out_file.write(raw_header)
-
+        # partition table + inline data
+        startAddr = 0x2c # start of data relative to start of partition table
         for section in header['items']:
-            if section['name'] == 'rootfs.ubi':
-                continue
+            # offset to next partition table entry relative to start of partition table
+            # in last partition entry this value is 0 and rootfs data follows immediately
+            # there is no entry for rootfs partition
+            nextOffset = startAddr + section['size']
+            if(section['last']):
+                nextOffset = 0
 
-            hdr = struct.pack('>I32s2I',
-                section.get('type', 0),
+            hdr = struct.pack('>32s3I',
                 section['name'].encode('utf-8'),
-                section['offset'],
+                startAddr,
+                nextOffset,
                 section['size']
             )
 
-            out_file.write(hdr)
+            # increment startAddr to point to next section
+            startAddr += section['size'] + 0x2c
 
-        for section in header['items']:
-            out_file.seek(0x1814 + section['offset'])
+            out_file.write(hdr)
             out_file.write(get_section_contents(section))
+
+        # rootfs data at the end
+        out_file.write(get_section_contents(header['rootfs']))
 
         size = out_file.tell()
 
@@ -141,32 +156,28 @@ def create_image(output_image, root, support):
     '''Create an image with a ubi "root" and a "support" string.'''
     header = {}
 
-    header['rootfs_size'] = os.path.getsize(root)
     header['items'] = []
 
     rootfs = {}
     rootfs['name'] = 'rootfs.ubi'
     rootfs['file'] = root
-    rootfs['offset'] = 0
-    rootfs['size'] = header['rootfs_size']
-    header['items'].append(rootfs)
+    rootfs['size'] = os.path.getsize(root)
+    header["rootfs"] = rootfs
 
     support_list = {}
     support_list['name'] = 'support-list'
     support_list['data'] = re.sub("\\\\r\\\\n ?", "\r\n", support).encode("utf-8")
-    support_list['offset'] = header['rootfs_size']
     support_list['size'] = len(support_list['data'])
+    support_list['last'] = 0
     header['items'].append(support_list)
 
     sw_version = {}
     sw_version['name'] = 'soft-version'
-    sw_version['type'] = 1
     sw_version['data'] = encode_soft_verson()
-    sw_version['offset'] = support_list['offset'] + support_list['size']
     sw_version['size'] = len(sw_version['data'])
+    sw_version['last'] = 1
     header['items'].append(sw_version)
 
-    header['num_items'] = len(header['items']) - 1
     write_image(output_image, header)
 
 def main(args):

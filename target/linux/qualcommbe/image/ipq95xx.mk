@@ -42,7 +42,7 @@ define Device/tplink_be800v1
 	KERNEL_INSTALL := 1
 	KERNEL_SIZE := 6144k
 	SOC := ipq9574
-	DEVICE_PACKAGES := kmod-ath12k ath12k-firmware-qcn9274 f2fsck mkf2fs kmod-sfp
+	DEVICE_PACKAGES := kmod-ath12k ath12k-firmware-qcn9274 ipq-wifi-tplink_be800-v1 ipq-wifi-firmware-tplink_be800-v1 f2fsck mkf2fs kmod-sfp
 	IMAGES += web-ui-factory.bin
 	IMAGE/web-ui-factory.bin := append-ubi | tplink-image-2023
 	TPLINK_SUPPORT_STRING := SupportList:\n{product_name:Archer BE800,product_ver:1.0.0,special_id:55530000}\n{product_name:Archer BE800,product_ver:1.0.0,special_id:43410000}\n{product_name:Archer BE800,product_ver:1.0.0,special_id:45550000}\n{product_name:Archer BE800,product_ver:1.0.0,special_id:484B0000}\n{product_name:Archer BE800,product_ver:1.0.0,special_id:41530000}\n{product_name:Archer BE800,product_ver:1.0.0,special_id:41550000}\n{product_name:Archer BE800,product_ver:1.0.0,special_id:53470000}\n{product_name:Archer BE800,product_ver:1.20,special_id:55530000}\n{product_name:Archer BE800,product_ver:1.20,special_id:45550000}\n{product_name:Archer BE800,product_ver:1.20,special_id:43410000}\n{product_name:Archer BE800,product_ver:1.20,special_id:41530000}\n{product_name:Archer BE800,product_ver:1.20,special_id:41550000}\n{product_name:Archer BE800,product_ver:1.20,special_id:53470000}\n
