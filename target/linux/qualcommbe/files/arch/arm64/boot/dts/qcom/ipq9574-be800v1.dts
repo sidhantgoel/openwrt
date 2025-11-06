@@ -795,145 +795,45 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 		nand-ecc-strength = <8>;
+		nand-ecc-step-size = <512>;
 		nand-bus-width = <0x08>;
 		nand-ecc-engine = <&qpic_nand>;
-		partition@300000 {
-			label = "0:BOOTCONFIG1";
-			reg = <0x300000 0x80000>;
-		};
+		partitions {
+			compatible = "qcom,smem-part";
+			partition-0-ethphyfw {
+				label = "0:ethphyfw";
+				read-only;
 
-		partition@900000 {
-			label = "0:CDT";
-			reg = <0x900000 0x80000>;
-			read-only;
-		};
+				nvmem-layout {
+					compatible = "fixed-layout";
+					#address-cells = <1>;
+					#size-cells = <1>;
 
-		partition@380000 {
-			label = "0:QSEE";
-			reg = <0x380000 0x380000>;
-			read-only;
-		};
-
-		partition@980000 {
-			label = "0:APPSBLENV";
-			reg = <0x980000 0x40000>;
-
-			nvmem-layout {
-				compatible = "u-boot,env";
-
-				macaddr_lan: ethaddr {
-					#nvmem-cell-cells = <1>;
+					aqr_fw: aqr-fw@0 {
+						reg = <0x28 0x60002>;
+					};
 				};
 			};
-		};
 
-		partition@9c0000 {
-			label = "0:APPSBLENV1";
-			reg = <0x9c0000 0x40000>;
-			read-only;
-		};
-
-		partition@800000 {
-			label = "0:TME";
-			reg = <0x800000 0x80000>;
-			read-only;
-		};
-
-		partition@280000 {
-			label = "0:BOOTCONFIG";
-			reg = <0x280000 0x80000>;
-			read-only;
-		};
-
-		partition@b80000 {
-			label = "0:ART";
-			reg = <0xb80000 0x200000>;
-			read-only;
-		};
-
-		partition@880000 {
-			label = "0:RPM";
-			reg = <0x880000 0x80000>;
-			read-only;
-		};
-
-		partition@a00000 {
-			label = "0:APPSBL";
-			reg = <0xa00000 0x180000>;
-			read-only;
-		};
-
-		partition@700000 {
-			label = "0:DEVCFG";
-			reg = <0x700000 0x80000>;
-			read-only;
-		};
-
-		partition@180000 {
-			label = "0:MIBIB";
-			reg = <0x180000 0x100000>;
-			read-only;
-		};
-
-		partition@6e40000 {
-			label = "rootfs_1";
-			reg = <0x6e40000 0x5f00000>;
-		};
-
-		partition@780000 {
-			label = "0:APDP";
-			reg = <0x780000 0x80000>;
-			read-only;
-		};
-
-		partition@0 {
-			label = "0:SBL1";
-			reg = <0x00 0x180000>;
-			read-only;
-		};
-
-		partition@f40000 {
-			label = "rootfs";
-			reg = <0xf40000 0x5f00000>;
-		};
-
-		partition@e80000 {
-			label = "0:LICENSE";
-			reg = <0xe80000 0x40000>;
-			read-only;
-		};
-
-		partition@cd40000 {
-			label = "tp_data";
-			reg = <0xcd40000 0x1440000>;
-			read-only;
-		};
-
-		partition@d80000 {
-			label = "0:ETHPHYFW";
-			reg = <0xd80000 0x100000>;
-			read-only;
-			nvmem-layout {
-				compatible = "fixed-layout";
+			partition-0-appsblenv {
+				compatible = "fixed-partitions";
+				label = "0:appsblenv";
 				#address-cells = <1>;
 				#size-cells = <1>;
 
-				aqr_fw: aqr-fw@0 {
-					reg = <0x28 0x60002>;
+				partition@0 {
+					label = "env-data";
+					reg = <0x0 0x40000>;
+
+					nvmem-layout {
+						compatible = "u-boot,env";
+
+						macaddr_lan: ethaddr {
+							#nvmem-cell-cells = <1>;
+						};
+					};
 				};
 			};
-		};
-
-		partition@ec0000 {
-			label = "secure-binary";
-			reg = <0xec0000 0x80000>;
-			read-only;
-		};
-
-		partition@e180000 {
-			label = "data";
-			reg = <0xe180000 0x80000>;
-			read-only;
 		};
 	};
 };

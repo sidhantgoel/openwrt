@@ -1,0 +1,12 @@
+--- a/drivers/net/phy/aquantia/aquantia_firmware.c
++++ b/drivers/net/phy/aquantia/aquantia_firmware.c
+@@ -371,6 +371,9 @@ int aqr_firmware_load(struct phy_device
+ 		if (!ret)
+ 			return ret;
+ 
++		if(ret == -EPROBE_DEFER) 
++			return ret;
++
+ 		ret = aqr_firmware_load_fs(phydev);
+ 		if (ret)
+ 			return ret;
