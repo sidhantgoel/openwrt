@@ -1,0 +1,24 @@
+name: Fix Preinit Executable Flag
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  chmod:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Force Executable Bits
+        run: |
+          if [ -f target/linux/qualcommbe/ipq95xx/base-files/lib/preinit/09_mount_factory_data ]; then
+            git update-index --chmod=+x target/linux/qualcommbe/ipq95xx/base-files/lib/preinit/09_mount_factory_data
+          fi
+
+      - name: Commit Permission Patch
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Fix target script permissions to 755 execution mode" && git push)

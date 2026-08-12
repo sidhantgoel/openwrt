@@ -1,0 +1,9 @@
+/* Locate your layout configuration node block inside the file and update this specific property name */
+&mdio {
+	status = "okay";
+	pinctrl-0 = <&mdio_pins>;
+	pinctrl-names = "default";
+	
+	/* CHANGE THIS LINE FROM: phy-reset-gpio TO: */
+	reset-gpios = <&tlmm 60 GPIO_ACTIVE_LOW>;
+};

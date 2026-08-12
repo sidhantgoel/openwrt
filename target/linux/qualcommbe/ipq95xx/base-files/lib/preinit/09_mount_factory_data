@@ -1,0 +1,28 @@
+#!/bin/sh
+
+mount_factory_data() {
+    local part_name="tp_data"
+    local mtd_path
+    local ubi_num
+
+    mtd_path=$(find_mtd_chardev "$part_name")
+    [ -z "$mtd_path" ] && return 1
+
+    # Safe fallback lookup to resolve runtime device nodes robustly
+    ubi_num=$(grep "$part_name" /proc/mtd | cut -d: -f1 | grep -o '[0-9]*')
+    [ -z "$ubi_num" ] && return 1
+
+    if ! ubiattach --dev-path="$mtd_path" --devn="$ubi_num" 2>/dev/null; then
+        # Check if already attached in a prior processing pass
+        if ! ubiattach -m "$ubi_num" 2>/dev/null; then
+            return 1
+        fi
+    fi
+
+    mkdir -p /tmp/"$part_name"
+    if ! mount -o ro,noatime -t ubifs ubi"$ubi_num":"$part_name" /tmp/"$part_name"; then
+        return 1
+    fi
+}
+
+boot_hook_add preinit_essential mount_factory_data
